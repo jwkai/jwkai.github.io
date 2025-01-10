@@ -21,4 +21,4 @@ My interests center around **automated reasoning and formal methods**, particula
 
 I am fortunate to have worked with [Dr. Alex Summers](https://www.cs.ubc.ca/~alexsumm/) at UBC on the [Viper](https://www.pm.inf.ethz.ch/research/viper.html) project, and with [Dr. Mina Tahmasbi Arashloo](https://mina.arashloo.net/) at the University of Waterloo on network performance analysis. I previously worked as a long-term research assistant and lab manager at the UBC Vision Lab with [Dr. James Enns](https://psych.ubc.ca/profile/james-enns/), where I helped develop studies on action-perception theory, object recognition and social psychology.
 
-I have additionally worked for several years a software developer in scientific research, including full-stack development, data analysis and digital signal processing.
+I have additionally worked for several years a software developer in scientific research. I have experience with data analysis and full-stack development in the context of bioinformatics, neuroscience and cognitive psychology.
