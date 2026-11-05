@@ -1,0 +1,120 @@
+<!doctype html><html lang="en"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Automated Probabilistic Reasoning</title>
+<style>
+/* one page: the video with chapters, then the workflow and case studies as clickable boxes; colours are the
+   scenes' own (anim/common/style.py), lifted for dark backgrounds */
+:root{--fg:#0d2659;--muted:#6b7480;--line:#9aa3ad;--rule:#e4e6ee;--bg:#fff;--panel:#f5f6fa;--btn:#fff;--on-fg:#fff;
+ --explorer:#d55e00;--sampler:#7b3fa0;--checker:#045073;--cond:#b8860b;--shade:#0d265966}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--fg:#dfe6f5;--muted:#9aa4b2;--line:#5d6878;--rule:#2c3442;
+ --bg:#141922;--panel:#1d2430;--btn:#1d2430;--on-fg:#141922;--explorer:#f08a3c;--sampler:#b48ad0;--checker:#5fb3d9;--cond:#e0b54a;
+ --shade:#000a;color-scheme:dark}}
+:root[data-theme="dark"]{--fg:#dfe6f5;--muted:#9aa4b2;--line:#5d6878;--rule:#2c3442;--bg:#141922;--panel:#1d2430;--btn:#1d2430;
+ --on-fg:#141922;--explorer:#f08a3c;--sampler:#b48ad0;--checker:#5fb3d9;--cond:#e0b54a;--shade:#000a;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;font:16px/1.4 "Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--fg);background:var(--bg)}
+main{max-width:1180px;margin:0 auto;padding-block:28px;padding-left:max(16px,env(safe-area-inset-left,0px));
+ padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{text-wrap:balance}h1{font-size:26px;margin:0 0 4px}p.sub{color:var(--muted);margin:0 0 26px}
+h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:30px 0 12px}
+.flow{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:46px 54px;padding:44px 10px 10px}
+.node,.case{font:inherit;color:inherit;text-align:left;cursor:pointer;border-radius:14px;background:var(--bg)}
+.node{border:3px solid var(--c);padding:16px 18px;min-height:96px;display:flex;flex-direction:column;justify-content:center}
+.node b{font-size:22px;color:var(--c)}.node span,.case span{color:var(--muted);font-size:14px}
+.node:hover,.case:hover,.node:focus-visible,.case:focus-visible{background:var(--panel);outline:none;transform:translateY(-1px)}
+.node[data-k=llm]{grid-area:1/1}.node[data-k=rl]{grid-area:2/1}.node[data-k=ltl]{grid-area:3/1}
+.node[data-k=dtmc]{grid-area:1/2}.node[data-k=front]{grid-area:2/2}.node[data-k=sampler]{grid-area:1/3}
+.node[data-k=smc]{grid-area:1/4}.node[data-k=split]{grid-area:2/4}
+.intro{display:grid;grid-template-columns:repeat(4,1fr);gap:0 54px;padding:0 10px}
+.cases{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.case{border:1.5px solid var(--line);padding:14px 16px;display:flex;flex-direction:column;gap:2px}.case b{font-size:17px}
+svg.wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+dialog{width:min(1100px,96vw);border:0;background:var(--bg);color:var(--fg);border-radius:14px;padding:0;box-shadow:0 20px 60px #0004}
+dialog::backdrop{background:var(--shade)}.dh{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--rule)}
+.dh b{flex:1}button:focus-visible{outline:2px solid var(--checker);outline-offset:2px}.dh button{font:inherit;color:var(--fg);border:1px solid var(--line);background:var(--btn);border-radius:8px;padding:4px 10px;cursor:pointer}
+video{display:block;width:100%;background:#fff}ol{margin:0;padding:10px 16px 14px 36px;color:var(--muted);font-size:14px}
+ol li{cursor:pointer;padding:2px 0}ol li.on{color:var(--fg);font-weight:600}ol li.off{opacity:.45;cursor:default}
+small.k{color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400}
+video{max-width:100%}#reel{border:1px solid var(--rule);border-radius:10px}.chaps{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
+.chap{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--btn);border-radius:999px;padding:3px 10px;cursor:pointer;color:var(--fg)}
+.chap.on{background:var(--fg);color:var(--on-fg);border-color:var(--fg)}#pos{color:var(--muted);font-size:13px;margin-right:6px}@media(max-width:760px){.flow{grid-template-columns:1fr;gap:38px;padding:10px 40px 10px 64px}
+.flow .node{grid-area:auto}.node{min-height:0}.intro{grid-template-columns:1fr 1fr;gap:14px;padding:0}
+.node[data-k=front]{order:1}.node[data-k=dtmc]{order:2}.node[data-k=sampler]{order:3}.node[data-k=smc]{order:4}
+.node[data-k=split]{order:5}.node[data-k=llm]{order:6}.node[data-k=rl]{order:7}.node[data-k=ltl]{order:8}}
+</style>
+<main>
+<h1>The Case for Automated Probabilistic Reasoning for Network Performance Analysis</h1>
+<p class="sub">A HotNets ’26 explainer. Watch it end to end, or jump to a chapter or to any part of the
+workflow below.</p>
+<h2>The video</h2>
+<video id="reel" controls preload="metadata" poster="videos/poster.jpg"></video>
+<div class="chaps"><span id="pos"></span><button class="chap" data-t="0.00">1 Motivation</button><button class="chap" data-t="156.42">2 Workflow overview</button><button class="chap" data-t="262.63">3 Policy to DTMC</button><button class="chap" data-t="368.67">4 Checking probabilities with statistical model checking (SMC)</button><button class="chap" data-t="556.95">5 The LLM explorer</button><button class="chap" data-t="701.03">6 The RL explorer</button><button class="chap" data-t="767.93">7 Finding explanations</button><button class="chap" data-t="942.63">8 Importance splitting for rare violations</button><button class="chap" data-t="1103.21">9 Compiling programs to MDPs</button><button class="chap" data-t="1275.30">10 Recap</button></div>
+<h2>Start here</h2>
+<div class="intro"><button class="node" style="--c:var(--fg)" data-k="motivation"><b>Motivation</b><span>incast: one counterexample, or how likely?</span></button><button class="node" style="--c:var(--fg)" data-k="overview"><b>Overview</b><span>the explorer–checker loop, and Buggy FQ-CoDel</span></button></div>
+<h2>The workflow <small class="k">click a box to jump to it in the video</small></h2>
+<div class="flow" id="flow"><svg class="wires" id="wires"></svg><button class="node" style="--c:var(--explorer)" data-k="llm"><b>LLM explorer</b><span>proposes conditions C as σ</span></button><button class="node" style="--c:var(--explorer)" data-k="rl"><b>RL explorer</b><span>learns adversarial traffic σ</span></button><button class="node" style="--c:var(--fg)" data-k="dtmc"><b>MDP ⊗ σ</b><span>the checker&#x27;s input: a DTMC</span></button><button class="node" style="--c:var(--checker)" data-k="sampler"><b>Sampling</b><span>SMC calls it again and again: one trace each</span></button><button class="node" style="--c:var(--checker)" data-k="smc"><b>SMC</b><span>estimates p̂ = Pr[¬φ | C] to a set interval</span></button><button class="node" style="--c:var(--cond)" data-k="ltl"><b>LTLf learner</b><span>in the explorer: explains σ* as ψ</span></button><button class="node" style="--c:var(--muted)" data-k="front"><b>Buffy front-end</b><span>programs compile into the models</span></button><button class="node" style="--c:var(--checker)" data-k="split"><b>Importance splitting</b><span>for rare violations</span></button></div>
+
+</main>
+<dialog id="dlg"><div class="dh"><b id="dt"></b><button id="prev">←</button><button id="next">→</button>
+<button id="close">Esc</button></div><video id="vid" controls autoplay></video><ol id="list"></ol></dialog>
+<script>
+const SC={"opening": {"title": "Ch 1 \u00b7 Title, then incast: one counterexample, or how likely overflow is?", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/ch00_cold_open.py", "cls": "IncastOpening", "t0": 0, "t1": 156.42}, "map0": {"title": "Ch 2 \u00b7 The explorer-checker loop, and the Buggy FQ-CoDel example", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/workflow_map.py", "cls": "WorkflowMap0", "t0": 156.42, "t1": 262.63}, "map1": {"title": "Ch 3 \u00b7 Map: the explorer's policy \u03c3 enters the checker", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/workflow_map.py", "cls": "WorkflowMap1", "t0": 262.63, "t1": 288.33}, "dtmc": {"title": "Ch 3 \u00b7 Buggy FQ-CoDel as a MDP; a policy \u03c3 makes it a DTMC", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/ch03_policy_dtmc.py", "cls": "PolicyToDTMC", "t0": 288.33, "t1": 368.67}, "map2": {"title": "Ch 4 \u00b7 Map: the DTMC goes to SMC's sampling engine", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/workflow_map.py", "cls": "WorkflowMap2", "t0": 368.67, "t1": 392.7}, "why": {"title": "Ch 4 \u00b7 Why statistical model checking? Exact methods' limits", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/ch04_why_smc.py", "cls": "WhySMC", "t0": 392.7, "t1": 437.88}, "smc": {"title": "Ch 4 \u00b7 One sampled trace, then SMC's estimate p\u0302 and its interval", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/ch03_smc.py", "cls": "SMCSamplingFQCoDel", "t0": 437.88, "t1": 556.95}, "map4": {"title": "Ch 5 \u00b7 Map: the score p\u0302 goes back to the explorer", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/workflow_map.py", "cls": "WorkflowMap4", "t0": 556.95, "t1": 588.6}, "llm": {"title": "Ch 5 \u00b7 LLM explorer: which of FPerf's clauses matter?", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/ch06_llm_explorer.py", "cls": "LLMExplorerFQCoDel", "t0": 588.6, "t1": 701.03}, "nfq": {"title": "Ch 6 \u00b7 RL explorer: learning traffic that starves Q1\u2013Q4", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/ch09_learned.py", "cls": "LearnedTrafficFQCoDel", "t0": 701.03, "t1": 767.93}, "map5": {"title": "Ch 7 \u00b7 Map: the final policy \u03c3* goes to the LTLf learner", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/workflow_map.py", "cls": "WorkflowMap5", "t0": 767.93, "t1": 789.8}, "ltl": {"title": "Ch 7 \u00b7 LTLf learner: the policy as a short formula \u03c8", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/ch09_learned.py", "cls": "LTLfFromPolicy", "t0": 789.8, "t1": 942.63}, "extras8": {"title": "Ch 8 \u00b7 Extras: the two extra chapters, Ch 8 next", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/extras.py", "cls": "Extras8", "t0": 942.63, "t1": 947.25}, "extras9": {"title": "Ch 9 \u00b7 Extras: the two extra chapters, Ch 9 next", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/extras.py", "cls": "Extras9", "t0": 1103.21, "t1": 1107.03}, "split": {"title": "Ch 8 \u00b7 Importance splitting for rare violations", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/ch09_splitting.py", "cls": "SplittingRareEvents", "t0": 947.25, "t1": 1103.21}, "front": {"title": "Ch 9 \u00b7 Compiling programs to MDPs (Buffy)", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/ch10_frontends.py", "cls": "FrontEnds", "t0": 1107.03, "t1": 1275.3}, "outlook": {"title": "Ch 10 \u00b7 Recap: modular parts, open directions", "src": "videos/full.mp4", "ok": true, "file": "anim/scenes/ch11_outlook.py", "cls": "Outlook", "t0": 1275.3, "t1": 1309.31}, "prefix": {"title": "Extra \u00b7 Sampling as a walk down the pruned tree", "src": "videos/SMCPrefixTree.mp4", "ok": false, "file": "anim/scenes/ch03_smc.py", "cls": "SMCPrefixTree"}, "smc_incast": {"title": "Extra \u00b7 SMC on incast", "src": "videos/SMCSamplingIncast.mp4", "ok": false, "file": "anim/scenes/ch03_smc.py", "cls": "SMCSamplingIncast"}, "gallery": {"title": "Extra \u00b7 Four more schedulers", "src": "videos/WorstCaseGallery.mp4", "ok": false, "file": "anim/scenes/ch09_learned.py", "cls": "WorstCaseGallery"}}, BX={"motivation": {"label": "Motivation", "sub": "incast: one counterexample, or how likely?", "scenes": ["opening"], "t": 0}, "overview": {"label": "Overview", "sub": "the explorer\u2013checker loop, and Buggy FQ-CoDel", "scenes": ["map0"], "t": 156.42}, "llm": {"label": "LLM explorer", "sub": "proposes conditions C as \u03c3", "scenes": ["map4", "llm"], "t": 556.95}, "rl": {"label": "RL explorer", "sub": "learns adversarial traffic \u03c3", "scenes": ["nfq"], "t": 701.03}, "dtmc": {"label": "MDP \u2297 \u03c3", "sub": "the checker's input: a DTMC", "scenes": ["map1", "dtmc"], "t": 262.63}, "sampler": {"label": "Sampling", "sub": "SMC calls it again and again: one trace each", "scenes": ["map2", "smc"], "t": 368.67}, "smc": {"label": "SMC", "sub": "estimates p\u0302 = Pr[\u00ac\u03c6 | C] to a set interval", "scenes": ["smc"], "t": 437.88}, "ltl": {"label": "LTLf learner", "sub": "in the explorer: explains \u03c3* as \u03c8", "scenes": ["map5", "ltl"], "t": 767.93}, "front": {"label": "Buffy front-end", "sub": "programs compile into the models", "scenes": ["extras9", "front"], "t": 1103.21}, "split": {"label": "Importance splitting", "sub": "for rare violations", "scenes": ["extras8", "split"], "t": 942.63}}, PL=["opening", "map0", "map1", "dtmc", "map2", "why", "smc", "map4", "llm", "nfq", "map5", "ltl", "extras8", "split", "extras9", "front", "outlook"], FULL="videos/full.mp4";
+const reel=document.getElementById('reel'), chaps=[...document.querySelectorAll('.chap')];
+let ri=0;
+function play(j,auto){while(j<PL.length&&!SC[PL[j]].ok)j++;if(j>=PL.length)return;ri=j;reel.src=SC[PL[j]].src;
+ if(auto)reel.play();document.getElementById('pos').textContent=`scene ${j+1} of ${PL.length}`;
+ chaps.forEach((c,n)=>c.classList.toggle('on',+c.dataset.i<=j&&(n===chaps.length-1||+chaps[n+1].dataset.i>j)));}
+if(FULL){reel.src=FULL;     // the whole video as one file: no reloads between scenes; chapters seek within it
+ chaps.forEach(c=>c.onclick=()=>{reel.currentTime=+c.dataset.t;reel.play();});
+ reel.addEventListener('timeupdate',()=>{const t=reel.currentTime+0.05;
+  chaps.forEach((c,n)=>c.classList.toggle('on',+c.dataset.t<=t&&(n===chaps.length-1||+chaps[n+1].dataset.t>t)));});}
+else{chaps.forEach(c=>c.onclick=()=>play(+c.dataset.i,true));reel.addEventListener('ended',()=>play(ri+1,true));play(0,false);}
+const dlg=document.getElementById('dlg'),vid=document.getElementById('vid'),list=document.getElementById('list');
+let cur=[],i=0;
+function show(j){const ok=cur.map(k=>SC[k]).filter(s=>s.ok);if(!ok.length)return;i=(j+cur.length)%cur.length;
+ let s=SC[cur[i]];if(!s.ok){return show(j+(j>=i?1:-1));}
+ if(s.t0==null)vid.src=s.src;else{if(!vid.src.endsWith(s.src))vid.src=s.src;vid.currentTime=s.t0;vid.play();}
+ document.getElementById('dt').textContent=s.title;
+ [...list.children].forEach((li,n)=>li.classList.toggle('on',n===i));}
+function open(k){if(FULL){reel.currentTime=BX[k].t;reel.scrollIntoView({behavior:'smooth',block:'center'});
+ reel.play();return;}
+ reel.pause();const b=BX[k];cur=b.scenes;list.innerHTML='';
+ cur.forEach((id,n)=>{const s=SC[id],li=document.createElement('li');
+  li.textContent=s.title+(s.ok?'':' (not rendered)');li.className=s.ok?'':'off';
+  li.title=s.file+' · '+s.cls;li.onclick=()=>s.ok&&show(n);list.appendChild(li);});
+ dlg.showModal();show(0);}
+document.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>open(b.dataset.k));
+document.getElementById('next').onclick=()=>show(i+1);document.getElementById('prev').onclick=()=>show(i-1);
+document.getElementById('close').onclick=()=>dlg.close();dlg.addEventListener('close',()=>vid.pause());
+vid.addEventListener('ended',()=>{if(i<cur.length-1)show(i+1)});
+vid.addEventListener('timeupdate',()=>{const s=SC[cur[i]];   // one-video mode: a scene ends at t1
+ if(s&&s.t1!=null&&vid.currentTime>=s.t1){if(i<cur.length-1)show(i+1);else vid.pause();}});
+dlg.addEventListener('show',()=>reel.pause());
+document.addEventListener('keydown',e=>{if(!dlg.open)return;if(e.key==='ArrowRight')show(i+1);if(e.key==='ArrowLeft')show(i-1);});
+function wires(){const f=document.getElementById('flow'),w=document.getElementById('wires'),r0=f.getBoundingClientRect();
+ const c=k=>{const r=f.querySelector(`[data-k=${k}]`).getBoundingClientRect();return{l:r.left-r0.left,r:r.right-r0.left,
+  t:r.top-r0.top,b:r.bottom-r0.top,x:(r.left+r.right)/2-r0.left,y:(r.top+r.bottom)/2-r0.top}};
+ const E=c('llm'),R=c('rl'),D=c('dtmc'),S=c('sampler'),M=c('smc'),L=c('ltl'),F=c('front'),P=c('split');
+ const defs=`<defs><marker id="h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--line)"/></marker></defs>`;
+ const path=(pts,col)=>`<path d="M${pts.map(p=>p.join(' ')).join(' L')}" style="stroke:${col}" stroke-width="2.5" fill="none" marker-end="url(#h)"/>`;
+ const txt=(t,x,y,col,anchor)=>`<text x="${x}" y="${y}" style="fill:${col||'var(--muted)'}" font-size="13" text-anchor="${anchor||'middle'}">${t}</text>`;
+ if(matchMedia('(max-width:760px)').matches){   // one column; sigma and the score run down the left side
+  const d=(A,B,t,up)=>path(up?[[A.x,A.t],[B.x,B.b+4]]:[[A.x,A.b],[B.x,B.t-4]],'var(--line)')+txt(t,A.x+10,((up?A.t:A.b)+(up?B.b:B.t))/2+4,0,'start');
+  const x1=E.l-26,xr=E.r+22;      // the score down the left side, sigma up the right: they never cross
+  w.innerHTML=defs+d(F,D,'writes the model')+d(D,S,'DTMC')+d(S,M,'traces')+d(P,M,'plugs into SMC',1)+d(R,L,'final σ*')+
+   path([[M.l,M.y],[x1,M.y],[x1,R.y],[R.l-4,R.y]],'var(--checker)')+path([[x1,E.y],[E.l-4,E.y]],'var(--checker)')+
+   txt('score p̂',x1-4,(M.y+E.y)/2,'var(--checker)','end')+
+   path([[R.r,R.y],[xr,R.y],[xr,D.y],[D.r+4,D.y]],'var(--explorer)')+
+   `<path d="M${E.r} ${E.y} L${xr} ${E.y}" style="stroke:var(--explorer)" stroke-width="2.5" fill="none"/>`+
+   txt('σ',xr+4,(D.y+E.y)/2,'var(--explorer)','start');return;}
+ const top=Math.min(E.t,M.t)-22,bx=(E.r+D.l)/2;
+ w.innerHTML=defs+path([[E.r,E.y],[D.l-4,E.y]],'var(--line)')+txt('σ',bx,E.y-8)+
+  path([[R.r,R.y],[bx,R.y],[bx,E.y+10],[D.l-4,E.y+10]],'var(--line)')+
+  path([[D.r,D.y],[S.l-4,S.y]],'var(--line)')+txt('DTMC',(D.r+S.l)/2,D.y-8)+
+  path([[S.r,S.y],[M.l-4,M.y]],'var(--line)')+txt('traces',(S.r+M.l)/2,S.y-8)+
+  path([[M.x,M.t],[M.x,top],[E.x,top],[E.x,E.t-4]],'var(--checker)')+txt('score p̂',(M.x+E.x)/2,top-6,'var(--checker)')+
+  path([[E.x,top],[E.l-18,top],[E.l-18,R.y],[R.l-4,R.y]],'var(--checker)')+
+  path([[R.x,R.b],[L.x,L.t-4]],'var(--cond)')+txt('final σ*',R.x+38,(R.b+L.t)/2)+
+  path([[D.x,F.t],[D.x,D.b+4]],'var(--line)')+txt('writes the model',D.x+64,(F.t+D.b)/2+4)+
+  path([[P.x,P.t],[M.x,M.b+4]],'var(--checker)')+txt('plugs into SMC',P.x+56,(P.t+M.b)/2+4,'var(--checker)');}
+addEventListener('resize',wires);wires();
+</script></html>
