@@ -1,0 +1,351 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Explorer–Checker Walkthrough</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<!-- Built by scripts/web_page.py from anim/web/player.html; plays the vector recordings of anim/web/record.py. -->
+<style>
+:root{--fg:#0d2659;--text2:#3d4a66;--muted:#6b7480;--line:#9aa3ad;--rail:#d8dbe6;--border:#dde0ea;--bg:#f5f6fa;--panel:#fff;--hover:#eef0f6;--cue:#d55e00}
+/* the picture keeps the scene's own background (the video's look); only the controls around it follow the theme */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--fg:#dfe5f3;--text2:#b7c0d4;--muted:#949db0;--line:#56607a;--rail:#2e3546;--border:#2e3546;--bg:#12151d;--panel:#1b2030;--hover:#262d40;--cue:#f08a3c;color-scheme:dark}}
+:root[data-theme="dark"]{--fg:#dfe5f3;--text2:#b7c0d4;--muted:#949db0;--line:#56607a;--rail:#2e3546;--border:#2e3546;--bg:#12151d;--panel:#1b2030;--hover:#262d40;--cue:#f08a3c;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.4 -apple-system,"Helvetica Neue",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--fg)}
+main{max-width:1100px;margin:0 auto;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{display:flex;gap:10px;align-items:center;margin:0 0 10px;min-width:0}
+#scene{max-width:min(420px,60vw)}
+#info{flex:1;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#player{background:var(--bg)}
+svg#stage{display:block;width:100%;aspect-ratio:16/9;background:#fff;border:1px solid var(--border);border-radius:8px;cursor:pointer}
+button,select{font:inherit;border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:6px 6px;cursor:pointer;color:inherit;white-space:nowrap}
+button:hover{background:var(--hover)}button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+button:focus-visible,select:focus-visible{outline:2px solid var(--cue);outline-offset:1px}
+.controls{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:8px 0 6px}  /* fixed cells: labels never shift buttons */
+.row2{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:6px 0}
+#status{font-weight:600;width:9.5em;font-variant-numeric:tabular-nums}
+#track{position:relative;height:36px;margin:6px 0;cursor:pointer;user-select:none;touch-action:none}
+#track .rail{position:absolute;left:0;right:0;top:16px;height:4px;background:var(--rail);border-radius:2px}
+#track .done{position:absolute;left:0;top:16px;height:4px;background:var(--fg);border-radius:2px}
+#track .tick{position:absolute;top:12px;width:1px;height:12px;background:var(--line)}
+#track .cue{position:absolute;top:5px;width:3px;height:26px;background:var(--cue);border-radius:1px;margin-left:-1px}
+#track .head{position:absolute;top:8px;width:14px;height:20px;margin-left:-7px;background:var(--fg);border-radius:4px;pointer-events:none}
+#hover{position:absolute;top:-4px;transform:translate(-50%,-100%);background:var(--fg);color:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;white-space:nowrap;display:none;z-index:2;pointer-events:none;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
+#now{color:var(--text2);height:4.2em;overflow:hidden}
+.m{font-family:"Latin Modern Math","STIX Two Math","Cambria Math","Times New Roman",serif;font-size:1.06em;white-space:nowrap}
+.m sub,.m sup{font-size:.72em}
+#now code{font:.95em Menlo,ui-monospace,monospace}
+kbd{font:12px ui-monospace,monospace;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--panel)}
+.keys{color:var(--muted);font-size:12.5px}
+#tests{white-space:pre-wrap;font:12px/1.5 ui-monospace,monospace;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:12px;display:none}
+#player:fullscreen{padding:12px 16px;display:flex;flex-direction:column;justify-content:center}
+#player:fullscreen svg#stage{width:auto;height:calc(100vh - 150px);margin:0 auto;border:0}
+@media (max-width:640px){.controls button .w{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* below the player, as on the video page (scripts/explorer_page.py): the chapter rows and the explorer-checker map */
+.nav{--explorer:#d55e00;--checker:#045073;--cond:#b8860b;--rule:#e4e6ee;--btn:#fff;--on-fg:#fff;--c:var(--fg);margin-top:18px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .nav{--explorer:#f08a3c;--checker:#5fb3d9;--cond:#e0b54a;--rule:#2c3442;--btn:#1d2430;--on-fg:#141922}}
+:root[data-theme="dark"] .nav{--explorer:#f08a3c;--checker:#5fb3d9;--cond:#e0b54a;--rule:#2c3442;--btn:#1d2430;--on-fg:#141922}
+.nav h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:22px 0 10px}
+.nav small.k{color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400}
+.chaps{display:flex;flex-direction:column;gap:6px}
+.crow{display:grid;grid-template-columns:118px 1fr;gap:8px;align-items:center;border:1px solid var(--rule);border-radius:10px;padding:5px 8px}
+.crow.one{display:block}.cname{font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap}
+.cbtns{display:flex;flex-wrap:wrap;gap:6px}
+.chap{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--btn);border-radius:999px;padding:3px 10px;cursor:pointer;color:var(--fg);white-space:nowrap}
+.chap.on{background:var(--fg);color:var(--on-fg);border-color:var(--fg)}
+.flow{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:54px 96px;padding:44px 10px 10px 40px}
+.node{font:inherit;color:inherit;text-align:left;cursor:pointer;border-radius:14px;background:var(--panel);white-space:normal;
+ border:3px solid var(--c);padding:16px 18px;min-height:96px;display:flex;flex-direction:column;justify-content:center}
+.node b{font-size:20px;color:var(--c)}.node span{color:var(--muted);font-size:13.5px}
+.node:hover,.node:focus-visible{background:var(--hover);outline:none;transform:translateY(-1px)}
+.node.on{box-shadow:0 0 0 3px var(--c) inset}
+.node[data-k=llm]{grid-area:1/1}.node[data-k=rl]{grid-area:2/1}.node[data-k=ltl]{grid-area:3/1}
+.node[data-k=model]{grid-area:1/2}.node[data-k=sampler]{grid-area:1/3}.node[data-k=smc]{grid-area:1/4}.node[data-k=split]{grid-area:2/3/2/5}
+svg.wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+svg.wires text{paint-order:stroke;stroke:var(--bg);stroke-width:5px;stroke-linejoin:round}
+.nav math{font-size:1.06em}svg.wires tspan.m{font-family:"Latin Modern Math","STIX Two Math","Cambria Math",serif;font-style:italic;font-size:15px}
+@media(max-width:760px){.crow{grid-template-columns:1fr;gap:5px}.chap{white-space:normal}
+ .flow{grid-template-columns:1fr;gap:38px;padding:10px 40px 10px 64px}.flow .node{grid-area:auto}.node{min-height:0}
+ .node[data-k=llm]{order:1}.node[data-k=rl]{order:2}.node[data-k=ltl]{order:3}.node[data-k=model]{order:4}
+ .node[data-k=sampler]{order:5}.node[data-k=smc]{order:6}.node[data-k=split]{order:7}}
+.home{margin:0 0 14px;color:var(--muted);line-height:1.35;font-size:max(15px,min(20px,calc((min(1100px,100vw) - 40px) / 61)))}.home a{color:var(--fg);font-weight:600;text-decoration:none}.home a:hover{text-decoration:underline}.home b{color:var(--fg)}</style></head><body><main><p class="home"><a href="../">← Back</a> · <b>Interactive walkthrough</b> · The Case for Automated Probabilistic Reasoning for Network Performance Analysis (HotNets ’26)</p>
+
+<div class="top"><select id="scene" aria-label="scene"></select><span id="info">loading…</span>
+<button id="full" title="full screen (F)">⛶</button></div>
+<div id="player">
+<svg id="stage" role="img" aria-label="animation"></svg>
+<div id="track" title="drag to scrub"><div class="rail"></div><div class="done" id="done"></div><div id="hover"></div></div>
+<div class="controls">
+<button id="bbeat" title="previous caption (PageUp)">⇤<span class="w"> caption</span></button>
+<button id="bstep" title="back one movement (←)">◀<span class="w"> step</span></button>
+<button id="rev" title="play backwards (R)">◀◀<span class="w"> reverse</span></button>
+<button id="play" title="play / pause (space, or click the picture)">▶<span class="w"> play</span></button>
+<button id="fstep" title="play the next movement, then pause; during a step, finish it (→)"><span class="w">step </span>▶</button>
+<button id="fbeat" title="next caption (PageDown)"><span class="w">caption </span>⇥</button>
+</div>
+<div class="row2">
+<label>speed <select id="speed" title="speed ([ and ])"><option value="0.1">0.1×</option><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+<span id="status">paused</span>
+<label title="C"><input type="checkbox" id="caps" checked> captions</label>
+<label><input type="checkbox" id="beatstop"> stop at each caption</label>
+<label title="at the end of a scene, carry on into the next one"><input type="checkbox" id="cont" checked> continue to next scene</label>
+</div>
+</div>
+<div id="now"></div>
+<div class="keys"><kbd>space</kbd> play/pause · <kbd>→</kbd>/<kbd>←</kbd> step · <kbd>PgDn</kbd>/<kbd>PgUp</kbd> caption · <kbd>R</kbd> reverse · <kbd>[</kbd>/<kbd>]</kbd> speed · <kbd>C</kbd> captions · <kbd>F</kbd> full screen · <kbd>Home</kbd>/<kbd>End</kbd> · drag the bar to scrub</div>
+<section class="nav"><h2>Chapters</h2><div class="chaps"><div class="crow one"><button class="chap" data-i="0">1&nbsp; Motivation</button></div><div class="crow"><span class="cname">2&nbsp; Overview</span><div class="cbtns"><button class="chap" data-i="1">2.1&nbsp; The explorer–checker loop</button><button class="chap" data-i="2">2.2&nbsp; Running example</button><button class="chap" data-i="3">2.3&nbsp; Anatomy of a query</button><button class="chap" data-i="4">2.4&nbsp; Compiling programs to MDPs</button></div></div><div class="crow"><span class="cname">3&nbsp; The Checker</span><div class="cbtns"><button class="chap" data-i="5">3.1&nbsp; Why SMC?</button><button class="chap" data-i="6">3.2&nbsp; How SMC works</button><button class="chap" data-i="8">3.3&nbsp; Importance splitting</button></div></div><div class="crow"><span class="cname">4&nbsp; The Explorer</span><div class="cbtns"><button class="chap" data-i="9">4.1&nbsp; LLM explorer</button><button class="chap" data-i="11">4.2&nbsp; RL explorer</button><button class="chap" data-i="12">4.3&nbsp; LTL explanations</button></div></div><div class="crow one"><button class="chap" data-i="14">5&nbsp; Recap and future directions</button></div></div><h2>The explorer–checker loop <small class="k">click a box to open its part</small></h2><div class="flow" id="flow"><svg class="wires" id="wires"></svg><button class="node" style="--c:var(--explorer)" data-k="llm" data-i="9"><b>LLM explorer</b><span>proposes conditions <math><mi>C</mi></math></span></button><button class="node" style="--c:var(--explorer)" data-k="rl" data-i="11"><b>RL explorer</b><span>learns a traffic policy <math><msup><mi>σ</mi><mo>*</mo></msup></math></span></button><button class="node" style="--c:var(--cond)" data-k="ltl" data-i="12"><b>LTL learner</b><span>explains <math><msup><mi>σ</mi><mo>*</mo></msup></math> as a condition <math><msup><mi>C</mi><mo>*</mo></msup></math></span></button><button class="node" style="--c:var(--fg)" data-k="model" data-i="4"><b>Network model</b><span>a program compiled to an MDP</span></button><button class="node" style="--c:var(--checker)" data-k="sampler" data-i="6"><b>Sampling</b><span>traces from a network model and policy</span></button><button class="node" style="--c:var(--checker)" data-k="smc" data-i="5"><b>Statistical model checking</b><span>estimates <span class="m">p̂</span>, with a confidence interval</span></button><button class="node" style="--c:var(--checker)" data-k="split" data-i="8"><b>Importance splitting</b><span>for rare violations</span></button></div></section>
+<div id="tests"></div>
+</main><script>
+// [{chapter, cls, file, ok}] in running order (anim/plans/artifact/running_order.txt)
+const PLAYLIST=[{"chapter": "1 Motivation", "file": "ch00_cold_open", "cls": "IncastOpening", "ok": true, "group": "1 Motivation", "label": "Motivation"}, {"chapter": "2 Overview: the explorer–checker loop", "file": "workflow_map", "cls": "WorkflowMap0", "ok": true, "group": "2 Overview", "label": "The explorer–checker loop"}, {"chapter": "2 Overview: the running example, Buggy FQ-CoDel", "file": "ch02_fqcodel", "cls": "FQCoDelIntro", "ok": true, "group": "2 Overview", "label": "The running example, Buggy FQ-CoDel"}, {"chapter": "2 Overview: anatomy of a query", "file": "ch02_query", "cls": "AnatomyOfQuery", "ok": true, "group": "2 Overview", "label": "Anatomy of a query"}, {"chapter": "2 Overview: compiling network programs to MDPs", "file": "ch10_frontends", "cls": "FrontEnds", "ok": true, "group": "2 Overview", "label": "Compiling network programs to MDPs"}, {"chapter": "3 Checker: why statistical model checking?", "file": "ch04_why_smc", "cls": "WhySMC", "ok": true, "group": "3 Checker", "label": "Why statistical model checking?"}, {"chapter": "3 Checker: how statistical model checking works", "file": "workflow_map", "cls": "WorkflowMap2", "ok": true, "group": "3 Checker", "label": "How statistical model checking works (1/2)"}, {"chapter": "3 Checker: how statistical model checking works", "file": "ch03_smc", "cls": "SMCSamplingFQCoDel", "ok": true, "group": "3 Checker", "label": "How statistical model checking works (2/2)"}, {"chapter": "3 Checker: importance splitting for rare violations", "file": "ch09_splitting", "cls": "SplittingRareEvents", "ok": true, "group": "3 Checker", "label": "Importance splitting for rare violations"}, {"chapter": "4 Explorer: LLM-guided condition generation", "file": "workflow_map", "cls": "WorkflowMap4", "ok": true, "group": "4 Explorer", "label": "LLM-guided condition generation (1/2)"}, {"chapter": "4 Explorer: LLM-guided condition generation", "file": "ch06_llm_explorer", "cls": "LLMExplorerFQCoDel", "ok": true, "group": "4 Explorer", "label": "LLM-guided condition generation (2/2)"}, {"chapter": "4 Explorer: adversarial traffic distributions with RL", "file": "ch09_learned", "cls": "LearnedTrafficFQCoDel", "ok": true, "group": "4 Explorer", "label": "Adversarial traffic distributions with RL"}, {"chapter": "4 Explorer: explanations by LTL learning", "file": "workflow_map", "cls": "WorkflowMap5", "ok": true, "group": "4 Explorer", "label": "Explanations by LTL learning (1/2)"}, {"chapter": "4 Explorer: explanations by LTL learning", "file": "ch09_learned", "cls": "LTLfFromPolicy", "ok": true, "group": "4 Explorer", "label": "Explanations by LTL learning (2/2)"}, {"chapter": "5 Recap and future directions", "file": "ch11_outlook", "cls": "Outlook", "ok": true, "group": "5 Recap and future directions", "label": "Recap and future directions"}];
+const SCENE_URL="scenes/{cls}.json.gz";
+const DEBUG=new URLSearchParams(location.search).has('debug');   // ?debug: show each step's animation names   // where a scene's recording is, {cls} its class name
+const $=id=>document.getElementById(id), stage=$('stage'), track=$('track');
+const S={i:-1,D:null,pos:0,dir:0,stopAt:null,clock:null,pool:[],fi:null,token:0};
+const cache=new Map();
+const speed=()=>+$('speed').value, LAST=()=>S.D.fidx.length-1, uniq=a=>[...new Set(a)].join(', ');
+const esc=t=>t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// captions carry the scenes' inline math ("$\mathit{deqs}_{bl}$", label() in anim/common/style.py): the subset they
+// use, as HTML (letters italic, \mathbf upright bold, sub/superscripts, a few symbols); unknown commands show by name
+const SYM={times:'×',wedge:'∧',vee:'∨',neg:'¬',lnot:'¬',to:'→',rightarrow:'→',le:'≤',leq:'≤',ge:'≥',geq:'≥',ne:'≠',
+  neq:'≠',pm:'±',mid:'|',Pr:'Pr',cdot:'·',infty:'∞',approx:'≈',psi:'ψ',phi:'φ',varphi:'φ',sigma:'σ',theta:'θ',epsilon:'ε',
+  varepsilon:'ε',alpha:'α',beta:'β',gamma:'γ',delta:'δ',lambda:'λ',mu:'μ',pi:'π',rho:'ρ',tau:'τ',omega:'ω'};
+const BIN=new Set(['mid','times','wedge','vee','to','rightarrow','le','leq','ge','geq','ne','neq','pm','approx']);
+function tex(t){let i=0,up=0;
+  const atom=()=>{const c=t[i];
+    if(c==='{'){i++;let o='';while(i<t.length&&t[i]!=='}')o+=unit();i++;return o}
+    if(c==='\\'){i++;if(/[,;: ]/.test(t[i])){i++;return '\u2009'}
+      const name=(/^[a-zA-Z]+/.exec(t.slice(i))||[t[i]])[0];i+=name.length;
+      if(name==='mathbf'||name==='mathrm'||name==='text'){up++;const a=atom();up--;return name==='mathbf'?`<b>${a}</b>`:a}
+      if(name==='mathit'){up++;const a=atom();up--;return `<i>${a}</i>`}
+      if(name==='hat'){const a=atom();return a.replace(/([a-zA-Z])(<\/i>)?$/,'$1\u0302$2')}
+      return name in SYM?(BIN.has(name)?` ${SYM[name]} `:SYM[name]):esc(name)}
+    i++;if(/[a-zA-Z]/.test(c))return up?c:`<i>${c}</i>`;
+    if(c==='='||c==='<'||c==='>')return ` ${esc(c)} `;
+    if(c==='-')return '−';
+    return c===' '?'':esc(c)};                       // TeX ignores spaces in math
+  const unit=()=>{let b=atom();while(t[i]==='_'||t[i]==='^'){const k=t[i]==='_'?'sub':'sup';i++;b+=`<${k}>${atom()}</${k}>`}return b};
+  let o='';while(i<t.length)o+=unit();return o.replace(/<\/i><i>/g,'');}
+// a name in backticks is a name from the code (label() sets it in Menlo): monospace here too
+const capHTML=t=>t.split(/(\$[^$]*\$|`[^`]*`)/).map(p=>p.length>1&&p[0]==='$'&&p.at(-1)==='$'?`<span class="m">${tex(p.slice(1,-1))}</span>`:
+  p.length>1&&p[0]==='`'&&p.at(-1)==='`'?`<code>${esc(p.slice(1,-1))}</code>`:esc(p)).join('');
+const capText=t=>{const x=document.createElement('div');x.innerHTML=capHTML(t);return x.textContent;};
+
+// recording format 2 (anim/web/record.py): paths in thousandths of a scene unit, shapes [path, x, y, fill, stroke, width, caption?]
+async function fetchScene(cls){
+  if(!cache.has(cls))cache.set(cls,(async()=>{
+    const r=await fetch(SCENE_URL.replace('{cls}',cls));if(!r.ok)throw new Error(`${cls}: ${r.status}`);
+    // hosts that send .gz as Content-Encoding: gzip hand over plain JSON; others send the gzip bytes as they are;
+    // hosts that serve no gzip files (claude.ai artifacts) get the gzip bytes as base64 text ("H4sI" starts it)
+    let b=new Uint8Array(await r.arrayBuffer());
+    if(b[0]===0x48&&b[1]===0x34&&b[2]===0x73&&b[3]===0x49)b=Uint8Array.from(atob(new TextDecoder().decode(b).trim()),c=>c.charCodeAt(0));
+    const gz=b[0]===0x1f&&b[1]===0x8b;
+    if(gz&&typeof DecompressionStream==='undefined')   // older browsers cannot unpack the recordings: say so
+      throw new Error('This browser cannot open the animations: please use a recent Chrome, Edge, Firefox (113+) or Safari (16.4+).');
+    const text=gz?await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).text():new TextDecoder().decode(b);
+    return analyse(JSON.parse(text));})());
+  return cache.get(cls);}
+
+function analyse(D){
+  if(D.version!==2)throw new Error(`${D.scene}: recording format ${D.version}, the player reads 2: re-record it (scripts/web.sh)`);
+  D.rgb=D.colors.map(c=>'#'+c.slice(0,6));D.alpha=D.colors.map(c=>parseInt(c.slice(6),16)/255);
+  D.rgbN=D.colors.map(c=>[0,2,4].map(k=>parseInt(c.slice(k,k+2),16)));D.pp=new Map();
+  // the play each frame belongs to: the picture is blended between two recorded frames only inside one play
+  D.stepOf=new Int32Array(D.fidx.length).fill(-1);D.steps.forEach((s,k)=>{for(let f=s.f0;f<s.f1;f++)D.stepOf[f]=k});
+  const still=(a,b)=>{for(let i=a+1;i<b;i++)if(D.fidx[i]!==D.fidx[a])return false;return true};
+  // a movement is one play; still waits are pauses, waits with updaters running are motion;
+  // plays under 0.4 s (caption swaps, flashes) merge into the play right after them
+  const raw=D.steps.filter(s=>s.f1>s.f0&&!still(s.f0,s.f1)).map(s=>({f0:s.f0,f1:s.f1,anims:s.anims.filter(a=>a!=='Wait')}));
+  D.moves=[];let acc=null;const min=0.4*D.fps;
+  for(const m of raw){
+    if(acc&&acc.f1===m.f0){acc.f1=m.f1;acc.anims.push(...m.anims);}else{if(acc)D.moves.push(acc);acc={...m,anims:[...m.anims]};}
+    if(acc.f1-acc.f0>=min){D.moves.push(acc);acc=null;}}
+  if(acc)D.moves.push(acc);
+  // a play's last recorded frame is one sample short of its end: paused there, show the finished state
+  D.endAt=new Map();for(const s of D.steps)if(s.end!=null&&s.f1>s.f0)D.endAt.set(s.f1-1,s.end);
+  // a caption jump lands once the caption is fully on screen (after its own short swap, if it has one)
+  D.capts=D.cues.filter(c=>c.text).map(c=>{
+    const swap=D.steps.find(s=>Math.abs(s.f0-c.f)<=1&&s.f1>s.f0&&s.f1-s.f0<=0.5*D.fps);
+    return {...c,land:Math.min(D.fidx.length-1,swap?swap.f1-1:c.f)};});
+  return D;}
+
+const okIdx=d=>{for(let j=S.i+d;j>=0&&j<PLAYLIST.length;j+=d)if(PLAYLIST[j].ok)return j;return -1};
+async function show(i,at=0){            // at: a frame, or 'end'
+  const tok=++S.token, e=PLAYLIST[i];pause();$('info').textContent=`loading ${e.cls}…`;
+  let D;try{D=await fetchScene(e.cls)}catch(err){$('info').textContent=String(err);return false}
+  if(tok!==S.token)return false;
+  S.i=i;S.D=D;S.fi=null;$('scene').value=String(i);
+  try{if(location.hash.slice(1)!==e.cls)history.replaceState(null,'','#'+e.cls)}catch{}   // the address names the open scene
+  const [w,h]=D.frame;stage.setAttribute('viewBox',`${-w/2} ${-h/2} ${w} ${h}`);stage.style.background=D.bg;
+  stage.innerHTML='<g transform="scale(0.001,-0.001)" id="g"></g>';S.pool=[];   // thousandths, y up
+  [...track.querySelectorAll('.tick,.cue,.head')].forEach(x=>x.remove());
+  const add=(cls,f,t)=>{const x=document.createElement('div');x.className=cls;x.style.left=(100*f/Math.max(1,LAST()))+'%';if(t)x.dataset.t=t;track.appendChild(x);return x};
+  D.moves.forEach((m,k)=>add('tick',m.f0,`step ${k+1}: ${uniq(m.anims)}`));
+  D.capts.forEach(c=>add('cue',c.land,capText(c.text)));S.head=add('head',0);
+  S.pos=at==='end'?LAST():Math.max(0,Math.min(LAST(),at));draw();
+  const n=okIdx(1);if(n>=0)fetchScene(PLAYLIST[n].cls).catch(()=>{});   // warm the next scene
+  return true;}
+
+// slow motion stays smooth: between two recorded frames of one play, each shape is blended (outline points,
+// position, colours, width) from one to the next; a shape whose outline changes structure shows the nearer frame
+const outl=(D,pi)=>{let c=D.pp.get(pi);if(!c){const a=D.paths[pi].split(/(-?\d+)/),sep=a.filter((_,k)=>!(k&1)).map(t=>t.trim());
+  c={sep:sep.map((t,k)=>k&&k<sep.length-1&&!t?' ':t),n:a.filter((_,k)=>k&1).map(Number),key:sep.join('|')};D.pp.set(pi,c)}return c};
+function mix(D,a,b,u){
+  const L=(p,q)=>p+(q-p)*u;let d=D.paths[a[0]];
+  if(a[0]!==b[0]){const A=outl(D,a[0]),B=outl(D,b[0]);if(A.key!==B.key)return null;
+    d='';for(let k=0;k<A.n.length;k++)d+=A.sep[k]+Math.round(L(A.n[k],B.n[k]));d+=A.sep[A.n.length];}
+  const col=(ca,cb)=>{if(ca<0&&cb<0)return null;const p=D.rgbN[ca<0?cb:ca],q=D.rgbN[cb<0?ca:cb];
+    return [`rgb(${p.map((v,i)=>Math.round(L(v,q[i]))).join()})`,L(ca<0?0:D.alpha[ca],cb<0?0:D.alpha[cb])]};
+  return {d,x:L(a[1],b[1]),y:L(a[2],b[2]),f:col(a[3],b[3]),s:col(a[4],b[4]),w:L(a[5],b[5])};}
+function paint(p,d,x,y,f,s,w){
+  if(p._d!==d){p._d=d;p.setAttribute('d',d);}
+  p.setAttribute('transform',`translate(${x} ${y})`);
+  p.setAttribute('fill',f?f[0]:'none');p.setAttribute('fill-opacity',f?f[1]:0);
+  p.setAttribute('stroke',s?s[0]:'none');p.setAttribute('stroke-opacity',s?s[1]:0);
+  p.setAttribute('stroke-width',w*10);}   // Manim stroke width w is w/100 scene units
+const col=(D,c)=>c<0?null:[D.rgb[c],D.alpha[c]];
+
+function draw(){
+  const D=S.D;if(!D)return;const fi=Math.max(0,Math.min(LAST(),Math.round(S.pos)));
+  const atEnd=S.dir===0&&S.pos===fi&&D.endAt.has(fi), caps=$('caps').checked;
+  // between recorded frames a and b of one play (or its last frame and its finished state): blend at u
+  let a=null,b=null,u=0;const f0=Math.floor(S.pos);
+  if(!atEnd&&S.pos-f0>1e-3&&f0<LAST()){
+    const x=D.fidx[f0],y=D.stepOf[f0]>=0&&D.stepOf[f0]===D.stepOf[f0+1]?D.fidx[f0+1]:D.endAt.get(f0);
+    if(y!=null&&x!==y&&D.frames[x].length===D.frames[y].length){a=x;b=y;u=S.pos-f0;}}
+  const key=a!=null?`${S.pos}${caps?'':'n'}`:`${fi}${atEnd?'e':''}${caps?'':'n'}`;
+  if(key!==S.fi){S.fi=key;const fa=D.frames[a!=null?a:atEnd?D.endAt.get(fi):D.fidx[fi]],fb=a!=null?D.frames[b]:null,g=$('g');let n=0,tw=0;
+    for(let k=0;k<fa.length;k++){const id=fa[k],s=D.shapes[id];if(s[6]&&!caps)continue;
+      let p=S.pool[n];if(!p){p=document.createElementNS('http://www.w3.org/2000/svg','path');g.appendChild(p);S.pool.push(p);}
+      n++;if(p.style.display==='none')p.style.display='';
+      const jd=fb?fb[k]:id,t=jd!==id&&!D.shapes[jd][6]===!s[6]?mix(D,s,D.shapes[jd],u):null;
+      if(t){tw++;p._id=-1;paint(p,t.d,t.x,t.y,t.f,t.s,t.w);continue}
+      const use=jd!==id&&u>=0.5?jd:id;if(p._id===use)continue;p._id=use;
+      const [pi,x,y,fc,sc,w]=D.shapes[use];paint(p,D.paths[pi],x,y,col(D,fc),col(D,sc),w);}
+    S.tw=tw;
+    for(let k=n;k<S.pool.length;k++)if(S.pool[k].style.display!=='none')S.pool[k].style.display='none';
+    const mi=D.moves.findIndex(m=>fi>=m.f0&&fi<=m.f1-1), cue=[...D.capts].reverse().find(c=>c.f<=fi);
+    // the animations' Manim names only with ?debug: viewers see the step and the caption
+    $('now').innerHTML=(mi>=0?`<b>step ${mi+1} of ${D.moves.length}</b>`+(DEBUG?` · ${uniq(D.moves[mi].anims)}`:''):`<b>between steps</b>`)+
+      (cue?`<br>caption ${D.capts.indexOf(cue)+1} of ${D.capts.length}: “${capHTML(cue.text)}”`:'');
+    $('info').textContent=`${PLAYLIST[S.i].chapter} · ${(fi/D.fps).toFixed(1)} s / ${(LAST()/D.fps).toFixed(1)} s · scene ${S.i+1} of ${PLAYLIST.length}`;}
+  const pct=100*S.pos/Math.max(1,LAST());S.head.style.left=pct+'%';$('done').style.width=pct+'%';
+  const playing=S.dir>0&&S.stopAt==null;
+  $('play').classList.toggle('on',playing);$('play').firstChild.textContent=playing?'❚❚':'▶';$('play').lastChild.textContent=playing?' pause':' play';
+  $('rev').classList.toggle('on',S.dir<0);$('fstep').classList.toggle('on',S.stopAt!=null);
+  $('status').textContent=S.dir===0?'paused':S.stopAt!=null?`stepping · ${speed()}×`:`${S.dir>0?'playing':'reversing'} · ${speed()}×`;}
+
+// the clock is wall time; requestAnimationFrame drives it, a timer takes over only if frames stop arriving
+function advance(now){
+  if(!S.D||!S.dir){S.clock=null;return}
+  if(S.clock==null){S.clock=now;return}
+  // keep to real time through a busy-browser hiccup, like a video; only a long gap (a hidden tab) is not caught up
+  const dt=Math.min(1,(now-S.clock)/1000);S.clock=now;if(dt<=0)return;
+  const D=S.D,old=S.pos;let np=old+S.dir*dt*D.fps*speed();
+  // crossed this tick: strictly after the old position (so resuming from a caption does not stop on it again) and
+  // at or before the new one; no tolerance, or a tick ending just short of a caption lets the next one skip it
+  if($('beatstop').checked&&S.stopAt==null&&S.dir>0){const c=D.capts.find(c=>c.land>old&&c.land<=np);if(c){np=c.land;S.dir=0;}}
+  if(S.stopAt!=null&&((S.dir>0&&np>=S.stopAt)||(S.dir<0&&np<=S.stopAt))){np=S.stopAt;S.dir=0;S.stopAt=null;}
+  if(np>=LAST()){np=LAST();if(S.dir>0&&S.stopAt==null&&$('cont').checked&&okIdx(1)>=0){S.pos=np;S.dir=0;draw();
+      show(okIdx(1),0).then(ok=>{if(ok)run(1)});return}S.dir=0}
+  if(np<=0){np=0;S.dir=0}
+  S.pos=np;draw();}
+let lastRaf=0;(function raf(){lastRaf=performance.now();advance(lastRaf);requestAnimationFrame(raf)})();
+setInterval(()=>{const t=performance.now();if(t-lastRaf>100)advance(t)},33);
+
+function pause(){S.dir=0;S.stopAt=null;S.clock=null;draw();}
+function jump(f){pause();S.pos=Math.max(0,Math.min(LAST(),f));draw();}
+function run(dir,stopAt=null){   // leaving a finished end state forwards: go on from the next frame, no flash of the near-final one
+  if(dir>0&&S.D.endAt.has(S.pos)&&S.pos<LAST())S.pos+=1;
+  S.dir=dir;S.stopAt=stopAt;S.clock=null;draw();}
+function togglePlay(){if(S.dir>0&&S.stopAt==null)return pause();if(S.pos>=LAST()-0.5)S.pos=0;run(1);}
+function toggleRev(){if(S.dir<0)return pause();if(S.pos<=0.5)S.pos=LAST();run(-1);}
+async function stepFwd(){
+  if(S.stopAt!=null&&S.dir>0)return jump(S.stopAt);           // during a step: finish it now, like a slide clicker
+  const m=S.D.moves.find(m=>m.f1-1>S.pos+0.5);
+  if(!m){if(S.pos<LAST())return jump(LAST());const n=okIdx(1);if(n>=0&&await show(n,0))return stepFwd();return}
+  if(S.pos<m.f0-1)S.pos=m.f0-1;run(1,m.f1-1);}                 // skip the still pause before it, then play it
+async function stepBack(){                                     // to the state just before this (or the last) movement
+  const t=S.D.moves.map(m=>Math.max(0,m.f0-1)).filter(f=>f<S.pos-0.5).at(-1);
+  if(t!=null)return jump(t);if(S.pos>0.5)return jump(0);const p=okIdx(-1);if(p>=0)await show(p,'end');}
+async function caption(d){
+  const L=S.D.capts.map(c=>c.land);
+  if(d>0){const t=L.find(f=>f>S.pos+0.5);if(t!=null)return jump(t);
+    const n=okIdx(1);if(n>=0&&await show(n,0)){const c=S.D.capts[0];jump(c?c.land:0)}else jump(LAST());return}
+  const prev=L.filter(f=>f<S.pos-0.5);let t=prev.at(-1);
+  if(t!=null&&S.pos-t<S.D.fps)t=prev.at(-2);                    // within 1 s of a caption: the one before it
+  if(t!=null)return jump(t);
+  const p=okIdx(-1);if(p>=0&&await show(p,'end')){const c=S.D.capts.at(-1);jump(c?c.land:0)}else jump(0);}
+function bump(d){const s=$('speed');s.selectedIndex=Math.max(0,Math.min(s.options.length-1,s.selectedIndex+d));draw();}
+function fullscreen(){document.fullscreenElement?document.exitFullscreen():$('player').requestFullscreen?.();}
+function toggleCaps(){$('caps').checked=!$('caps').checked;draw();}
+
+const btn=(id,fn)=>{const b=$(id);b.addEventListener('mousedown',e=>e.preventDefault());b.onclick=fn;};   // no focus: space never double-fires
+btn('play',togglePlay);btn('rev',toggleRev);btn('fstep',stepFwd);btn('bstep',stepBack);btn('fbeat',()=>caption(1));btn('bbeat',()=>caption(-1));btn('full',fullscreen);
+stage.addEventListener('click',togglePlay);
+for(const id of ['speed','caps','beatstop','cont'])$(id).addEventListener('change',e=>{e.target.blur();draw()});
+const seek=e=>{const r=track.getBoundingClientRect();S.pos=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*LAST();draw();};
+let drag=null;   // scrubbing while playing keeps playing afterwards, like a video player
+track.onpointerdown=e=>{if(!S.D)return;drag={dir:S.stopAt==null?S.dir:0};S.dir=0;S.stopAt=null;try{track.setPointerCapture(e.pointerId)}catch{}seek(e)};
+track.onpointermove=e=>{const h=$('hover'),r=track.getBoundingClientRect(),
+  near=[...track.querySelectorAll('.cue,.tick')].find(x=>Math.abs(x.getBoundingClientRect().left-e.clientX)<4);
+  h.style.display=near?'block':'none';if(near){h.textContent=near.dataset.t;h.style.left=(e.clientX-r.left)+'px'}if(drag)seek(e)};
+track.onpointerup=e=>{if(!drag)return;seek(e);const d=drag.dir;drag=null;d?run(d):pause();};
+track.onpointercancel=()=>{drag=null;pause()};track.onpointerleave=()=>$('hover').style.display='none';
+addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey||!S.D)return;if(e.target.tagName==='SELECT'&&e.key!==' ')return;
+  const act={' ':togglePlay,ArrowRight:stepFwd,ArrowLeft:stepBack,PageDown:()=>caption(1),PageUp:()=>caption(-1),
+    r:toggleRev,R:toggleRev,'[':()=>bump(-1),']':()=>bump(1),c:toggleCaps,C:toggleCaps,f:fullscreen,F:fullscreen,
+    Home:()=>jump(0),End:()=>jump(LAST())}[e.key];
+  if(act){e.preventDefault();if(e.target.tagName==='SELECT')e.target.blur();act();}});
+
+// scene menu, grouped by chapter; #<Class> or ?scene=<Class>&t=<seconds> opens there; ?test runs the control self-test
+let group=null,chap=null;
+PLAYLIST.forEach((p,i)=>{const g=p.group||p.chapter;if(g!==chap){chap=g;group=document.createElement('optgroup');group.label=chap;$('scene').appendChild(group);}
+  const o=new Option((p.label||p.cls)+(p.ok?'':' (not recorded)'),String(i));o.disabled=!p.ok;group.appendChild(o);});
+$('scene').onchange=e=>{e.target.blur();show(+e.target.value,0)};
+const q=new URLSearchParams(location.search), want=PLAYLIST.findIndex(p=>p.cls===(q.get('scene')||location.hash.slice(1))&&p.ok);
+const first=want>=0?want:PLAYLIST.findIndex(p=>p.ok);
+if(first<0)$('info').textContent='no scenes recorded yet: scripts/web.sh';
+else show(first,0).then(ok=>{if(ok&&q.get('t'))jump(+q.get('t')*S.D.fps);
+  // a plain visit opens on the end of the first step (the title card), not on the empty frame before it fades in
+  else if(ok&&!q.has('test')&&S.D.moves.length)jump(S.D.moves[0].f1-1);
+  if(q.has('test')){const s=document.createElement('script');s.src='player_test.js?'+Date.now();document.body.appendChild(s);}});
+addEventListener('hashchange',()=>{const j=PLAYLIST.findIndex(p=>p.cls===location.hash.slice(1)&&p.ok);if(j>=0&&j!==S.i)show(j,0)});
+
+// the navigation below the player: chapter rows and the map open their scene; the current one is marked
+function wires(){const f=document.getElementById('flow'),w=document.getElementById('wires'),r0=f.getBoundingClientRect();
+ const c=k=>{const r=f.querySelector(`[data-k=${k}]`).getBoundingClientRect();return{l:r.left-r0.left,r:r.right-r0.left,
+  t:r.top-r0.top,b:r.bottom-r0.top,x:(r.left+r.right)/2-r0.left,y:(r.top+r.bottom)/2-r0.top}};
+ const E=c('llm'),R=c('rl'),D=c('model'),S=c('sampler'),M=c('smc'),L=c('ltl'),P=c('split');
+ const mk=(id,col)=>`<marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:${col}"/></marker>`;
+ const defs=`<defs>${mk('h','var(--line)')}${mk('he','var(--explorer)')}${mk('hc','var(--checker)')}${mk('hd','var(--cond)')}</defs>`;
+ const M_={'var(--line)':'h','var(--explorer)':'he','var(--checker)':'hc','var(--cond)':'hd'};
+ const path=(pts,col,both)=>`<path d="M${pts.map(p=>p.join(' ')).join(' L')}" style="stroke:${col}" stroke-width="2.5" fill="none" marker-end="url(#${M_[col]})"${both?` marker-start="url(#${M_[col]})"`:''}/>`;
+ const mt=t=>t.replace(/(p̂|σ\*|σ|C\*|\bC\b)/g,'<tspan class="m">$1</tspan>');   // symbols in an italic math face
+ const txt=(t,x,y,col,anchor)=>`<text x="${x}" y="${y}" style="fill:${col||'var(--muted)'}" font-size="13" text-anchor="${anchor||'middle'}">${mt(t)}</text>`;
+ if(matchMedia('(max-width:760px)').matches){   // one column: explorers, then the model and the checker; the score up the left
+  const d=(A,B,t,col,both)=>path([[A.x,A.b],[B.x,B.t-4]],col||'var(--line)',both)+txt(t,A.x+10,(A.b+B.t)/2+4,0,'start');
+  const x1=E.l-26;
+  w.innerHTML=defs+d(E,R,'uses','var(--explorer)',1)+d(R,L,'final σ*','var(--cond)')+d(L,D,'condition C, policy σ','var(--explorer)')+
+   d(D,S,'DTMC')+d(S,M,'traces','var(--checker)',1)+path([[P.x,P.t],[P.x,M.b+4]],'var(--checker)')+txt('rare events',P.x+10,(P.t+M.b)/2+4,0,'start')+
+   path([[M.l,M.y],[x1,M.y],[x1,E.y],[E.l-4,E.y]],'var(--checker)')+txt('score p̂',x1-4,(M.y+E.y)/2,'var(--checker)','end');return;}
+ const top=Math.min(E.t,M.t)-22, bx=(E.r+D.l)/2, mid=(S.r+M.l)/2;
+ w.innerHTML=defs+
+  path([[E.r,E.y],[D.l-4,E.y]],'var(--explorer)')+txt('condition C',bx,E.y-8,'var(--explorer)')+                 // LLM -> model
+  path([[R.r,R.y],[bx,R.y],[bx,E.y+16],[D.l-4,E.y+16]],'var(--explorer)')+txt('policy σ',bx+6,R.y-8,'var(--explorer)','start')+  // RL -> model
+  path([[E.x-30,E.b+4],[E.x-30,R.t-4]],'var(--explorer)',1)+txt('uses',E.x-38,(E.b+R.t)/2+4,'var(--explorer)','end')+  // LLM <-> RL
+  path([[R.x,R.b],[L.x,L.t-4]],'var(--cond)')+txt('final σ*',R.x+38,(R.b+L.t)/2+4,'var(--cond)')+                   // RL -> LTL learner
+  path([[D.r,D.y],[S.l-4,S.y]],'var(--line)')+txt('DTMC',(D.r+S.l)/2,D.y-8)+                                         // model -> sampling
+  path([[S.r+4,S.y],[M.l-4,M.y]],'var(--checker)',1)+txt('traces',mid,S.y-8,'var(--checker)')+                       // sampling <-> SMC
+  path([[mid,P.t],[mid,S.y+6]],'var(--checker)')+txt('rare events',mid+8,P.t-10,'var(--checker)','start')+    // splitting -> traces
+  path([[M.x,M.t],[M.x,top],[E.x+30,top],[E.x+30,E.t-4]],'var(--checker)')+txt('score p̂',(M.x+E.x)/2,top-6,'var(--checker)')+
+  path([[E.x+30,top],[E.l-18,top],[E.l-18,R.y],[R.l-4,R.y]],'var(--checker)');}
+addEventListener('resize',wires);wires();
+const navEls=[...document.querySelectorAll('.nav [data-i]')];
+navEls.forEach(el=>el.addEventListener('click',()=>{const j=+el.dataset.i;if(j<0)return;
+ show(j,0);document.getElementById('player').scrollIntoView({behavior:'smooth',block:'start'});}));
+const chapEls=[...document.querySelectorAll('.nav .chap')];   // a section spans its scenes up to the next
+let navAt=-2;setInterval(()=>{if(S.i===navAt)return;navAt=S.i;
+ chapEls.forEach((el,n)=>el.classList.toggle('on',+el.dataset.i<=S.i&&(n===chapEls.length-1||+chapEls[n+1].dataset.i>S.i)));
+ document.querySelectorAll('.nav .node').forEach(el=>el.classList.toggle('on',+el.dataset.i===S.i));},250);
+</script></body></html>
