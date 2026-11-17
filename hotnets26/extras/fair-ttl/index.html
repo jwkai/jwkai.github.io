@@ -1,0 +1,156 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Case study: (Cache) Congestion Control</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Built by fair_cache/extras/build.py from fair_cache/data/fair_ttl.json; figures from fair_cache/extras/figures.py.
+   Same tokens and cards as the "Does it scale?" page. */
+:root{--fg:#0d2659;--text2:#3d4a66;--muted:#6b7480;--border:#dde0ea;--bg:#f5f6fa;--card:#fff;--ttl:#045073;--open:#d55e00;
+  --mu:#1b7f3b;--bad:#c62828;--yes:#1b7f3b;--work:#c2185b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--fg:#dfe5f3;--text2:#b7c0d4;--muted:#949db0;
+  --border:#2e3546;--bg:#12151d;--card:#1a1f2b;--ttl:#7fb6d6;--open:#f29a55;--mu:#7fd39a;--bad:#ef7b7b;--yes:#7fd39a;--work:#f48fb1;color-scheme:dark}}
+:root[data-theme="dark"]{--fg:#dfe5f3;--text2:#b7c0d4;--muted:#949db0;--border:#2e3546;--bg:#12151d;--card:#1a1f2b;
+  --ttl:#7fb6d6;--open:#f29a55;--mu:#7fd39a;--bad:#ef7b7b;--yes:#7fd39a;--work:#f48fb1;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;font:17px/1.5 -apple-system,"Helvetica Neue",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--fg)}
+main{max-width:1180px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-size:30px;margin:0 0 6px}
+.byline{color:var(--muted);margin:0 0 18px}
+.intro{color:var(--text2);font-size:18px;max-width:62em}
+h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:44px 0 0;padding-top:14px;border-top:2px solid var(--border)}
+h3{font-size:22px;margin:22px 0 10px}
+p{max-width:62em;color:var(--text2)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin:14px 0}
+figure{margin:14px 0;background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 16px 14px}
+figure img{display:block;max-width:100%;max-height:76vh;width:auto;height:auto;margin:0 auto}
+figcaption{color:#3d4a66;font-size:15px;margin-top:6px}
+pre{font:15px/1.5 Menlo,Consolas,monospace;margin:0;overflow-x:auto;color:var(--fg)}
+.kw{color:var(--ttl);font-weight:600} .com{color:var(--muted)} .open{color:var(--open);font-weight:700} .mu{color:var(--mu);font-weight:700} .work{color:var(--work);font-weight:700}
+code{font:15px Menlo,Consolas,monospace}
+table{border-collapse:collapse;width:100%;font-size:16px}
+th{text-align:left;color:var(--muted);font-weight:600;padding:6px 10px;border-bottom:1px solid var(--border)}
+td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ttl{color:var(--ttl);font-weight:700} .lru{color:var(--fg)} .bad{color:var(--bad);font-weight:700}
+b.yes{color:var(--yes)} .good{color:var(--yes);font-weight:700} b.no{color:var(--bad)}
+.math{font:20px "Times New Roman",Times,serif;padding:10px 0;text-align:center}
+.anatomy{display:flex;flex-wrap:wrap;gap:10px 6px;justify-content:center;padding:6px 0 4px}
+.part{flex:0 1 auto;max-width:190px;text-align:center}
+.tok{font:20px "Times New Roman",Times,serif;color:var(--fg);padding:2px 6px 6px;border-bottom:3px solid var(--c)}
+.lab{font-size:14px;line-height:1.35;color:var(--text2);padding-top:6px}
+.p1{--c:var(--ttl)} .p2{--c:var(--open)} .p3{--c:var(--work)} .p4{--c:var(--mu)} .p5{--c:var(--ttl)}
+
+.takeaway{font-weight:700;color:var(--fg);margin:10px 0 0}
+.takeaway::before{content:"⇒ ";color:var(--ttl)}
+.wrap{overflow-x:auto}
+.caveat{font-size:15px;color:var(--muted)}
+.finding{background:var(--card);border-left:4px solid var(--ttl);border-radius:8px;padding:6px 16px;font-size:17px;color:var(--fg);max-width:62em} .finding p{color:var(--fg);margin:8px 0}
+img.query{display:block;width:100%;max-width:760px;height:auto;margin:4px auto}
+table.params td{border-bottom:none;padding:3px 10px} table.map td{font-size:15px;border-bottom:none;padding:4px 8px} table.map td.m{font-family:"Times New Roman",Times,serif;font-size:17px} table.map td.why{color:var(--muted)} math{font-size:19px;math-style:normal} table.map td:nth-child(3){white-space:nowrap} table.map td{vertical-align:middle} table.map code{font-size:14px} table.params td:first-child{white-space:nowrap;font-weight:600;color:var(--fg)}
+ol.why50{max-width:62em;color:var(--text2);padding-left:1.4em} ol.why50 li{margin:6px 0}
+ul{max-width:62em;color:var(--text2);padding-left:1.2em} li{margin:4px 0}
+@media (max-width:700px){body{font-size:16px} pre{font-size:13px}}
+.home{margin:0 0 14px;color:var(--muted);line-height:1.35;font-size:max(15px,min(20px,calc((min(1180px,100vw) - 40px) / 61)))}
+.home a{color:var(--fg);font-weight:600;text-decoration:none}.home a:hover{text-decoration:underline}.home b{color:var(--fg)}
+</style>
+<main>
+<p class="home"><a href="../../">← Back</a> · <b>Extra</b> · The Case for Automated Probabilistic Reasoning for Network Performance Analysis (HotNets ’26)</p>
+<h1>Case study: (Cache) Congestion Control</h1>
+<p class="byline">Fairness-TTL, the online controller of <a href="https://djapg7v42ea9q.cloudfront.net/pdf/hotnets26-final8.pdf">(Cache) Congestion Control</a> (Bahadori et al., HotNets '26; <a href="https://smhmahdi.ch/fair-cache-explorer/">explorer</a>), written in Buffy [HotNets '24]</p>
+<div class="finding">
+<p><b>Question:</b> in a given 100 s window, does every provider get at least half of its requests served from the cache? We call such a window <i>fair</i>.</p>
+<p><b>20 providers:</b> Fairness-TTL's windows are fair with probability 0.98 ± 0.01, so the query (≥ 0.9) holds.</p>
+<p><b>50 providers:</b> by the paper's measure nothing changes (provider inequality, CoV 0.037 in both cases), yet the probability falls to 0.42 ± 0.07 and the query fails.</p>
+<p><b>Why:</b> the least popular providers send few requests per window, and Fairness-TTL gives them the lowest hit rate (0.61, against 0.72 for the most popular).</p>
+</div>
+
+<h2>The program</h2>
+<div class="card"><pre>cache() {
+    <span class="kw">global</span> <span class="kw">int</span>[NO] ttl;             <span class="com">// per object: its TTL</span>
+    <span class="kw">global</span> <span class="kw">int</span>[<span class="work">P</span>] h;                <span class="com">// per provider: hit-rate estimate</span>
+    <span class="kw">global</span> <span class="kw">int</span> <span class="mu">μ</span>;                   <span class="com">// the price of cache space</span>
+    <span class="com">//@ monitor int[P] hits, reqs;  // per provider and window: H(i) = hits(i) / reqs(i)</span>
+
+    (i, o) ~ Zipf(<span class="work">P</span>) × Zipf(<span class="work">N</span>);     <span class="com">// one step = one request</span>
+    hit = cached[o] &amp; age &gt;= <span class="work">D<sub>fetch</sub></span>;
+    s = λ[o] / (h[i] * Λ[i]) - <span class="mu">μ</span>;   <span class="com">// marginal utility minus price</span>
+    <span class="kw">if</span> (s &gt; 0)
+        ttl[o] += 1000;             <span class="com">// additive increase: 1 s</span>
+    <span class="kw">else</span>
+        ttl[o] /= 2;                <span class="com">// multiplicative decrease</span>
+    h[i] += (hit - h[i]) / <span class="open">τ<sub>reqs</sub></span>;
+    <span class="kw">if</span> (timers &gt;= <span class="work">C</span>)                <span class="com">// overbooked: more live timers than slots</span>
+        <span class="mu">μ</span> += <span class="open">Δμ</span>;                    <span class="com">// price up</span>
+    <span class="kw">else</span>
+        <span class="mu">μ</span> -= <span class="open">Δμ</span>;                    <span class="com">// price down</span>
+    <span class="kw">if</span> (!cached[o] &amp; s &gt; 0)
+        insert(o);                  <span class="com">// evict the earliest-expired, else LRU</span>
+}</pre></div>
+<div class="card wrap"><table class="params">
+<tr><td><span class="work">P</span> = 20</td><td>providers; request rates Λ<sub>i</sub> Zipf(1)</td></tr>
+<tr><td><span class="work">N</span> = 50</td><td>objects per provider; popularity Zipf(1)</td></tr>
+<tr><td><span class="work">C</span> = 20% of P·N slots</td><td>cache capacity</td></tr>
+<tr><td><span class="work">D<sub>fetch</sub></span> = 175 ms</td><td>origin fetch delay</td></tr>
+<tr><td>100 requests/s</td><td>Poisson; one program step per request</td></tr>
+<tr><td><span class="open">τ<sub>reqs</sub></span> = 1,024</td><td><span class="open">tunable</span>: <code>h[i]</code> averages about provider i's last 1,024 requests</td></tr>
+<tr><td><span class="open">Δμ</span> = 1/65,536</td><td><span class="open">tunable</span>: step of the price <span class="mu">μ</span> per request</td></tr>
+<tr><td><code>h[i]</code>, <code>λ[o]</code>, <code>Λ[i]</code></td><td>running estimates: provider hit rate, object and provider request rates</td></tr>
+</table></div>
+<h3>From the paper's rule to the code</h3>
+<div class="card wrap"><table class="map">
+<tr><td class="m"><math displaystyle="true"><mrow><mtext>Score</mtext><mo>=</mo><msub><mi>w</mi><mi>i</mi></msub><msubsup><mi>u</mi><mi>α</mi><mo>′</mo></msubsup><mo>(</mo><mi>V</mi><mo>(</mo><msub><mi>h</mi><mi>i</mi></msub><mo>)</mo><mo>)</mo><msup><mi>V</mi><mo>′</mo></msup><mo>(</mo><msub><mi>h</mi><mi>i</mi></msub><mo>)</mo><mfrac><mrow><msub><mi>s</mi><mi>o</mi></msub><msub><mi>λ</mi><mi>o</mi></msub></mrow><msub><mi>Λ</mi><mi>i</mi></msub></mfrac><mo>+</mo><mi>β</mi><mo>(</mo><mo>…</mo><mo>)</mo><mo>−</mo><mi>μ</mi></mrow></math></td><td>→</td><td><code>s = λ[o] / (h[i] * Λ[i]) - <span class="mu">μ</span></code></td><td class="why">as in paper</td></tr>
+<tr><td class="m">TTL + 1 s if Score &gt; 0, else TTL × ½</td><td>→</td><td><code>ttl[o] += 1000</code>, <code>ttl[o] /= 2</code></td><td class="why">as in paper</td></tr>
+<tr><td class="m"><i>μ</i> rises when the cache is full of unexpired objects</td><td>→</td><td><code>if (timers &gt;= <span class="work">C</span>) <span class="mu">μ</span> += <span class="open">Δμ</span></code></td><td class="why">as in paper</td></tr>
+</table><p class="caveat">With the paper's settings <i>α</i> = 1, <i>V</i>(<i>h</i>) = <i>h</i>, <i>w</i> = <i>s<sub>o</sub></i> = 1, <i>β</i> = 0, <math displaystyle="true"><mrow><mtext>Score</mtext><mo>=</mo><mfrac><msub><mi>λ</mi><mi>o</mi></msub><mrow><msub><mi>h</mi><mi>i</mi></msub><msub><mi>Λ</mi><mi>i</mi></msub></mrow></mfrac><mo>−</mo><mi>μ</mi></mrow></math>.</p>
+<p class="caveat">Ours where the paper is silent: the estimator weight <span class="open">τ<sub>reqs</sub></span>, the step <span class="open">Δμ</span>, counting evicted objects' live timers as occupancy, admitting a miss only if <code>s &gt; 0</code>, and <span class="work">D<sub>fetch</sub></span>.</p></div>
+
+<h2>The query</h2>
+<div class="card">
+<img class="query" src="img/Query.png" alt="Pr[ F (t = T and for all i: H(i) ≥ 0.5) ] ≥ 0.9, with parts labelled: eventually; at time T; every provider i; has hit rate ≥ 0.5 in the last 100 s">
+<div class="math"><i>H</i>(<i>i</i>) = hits(<i>i</i>) / reqs(<i>i</i>) over [<i>T</i> − 100 s, <i>T</i>]</div>
+</div>
+<ul>
+<li><b>Test:</b> each independent run checks the one window ending at T; a sequential test (SPRT) answers yes or no, wrong at most 1% of the time.</li>
+<li><b>Cross-check:</b> long runs cut into successive windows; the share of fair windows estimates the same probability (± 95% interval over runs).</li>
+</ul>
+
+<h2>20 providers: the query holds</h2>
+<div class="card wrap"><table>
+<tr><th>policy</th><th>answer</th><th class="num">evidence</th></tr>
+<tr><td>LRU</td><td><b class="no">no</b></td><td class="num">0 of 5 runs</td></tr>
+<tr><td>Efficiency-optimal</td><td><b class="no">no</b></td><td class="num">bound: at most 0.80</td></tr>
+<tr><td>Fairness-optimal</td><td><b class="yes">yes</b></td><td class="num">42 of 42 runs</td></tr>
+<tr><td>Fairness-TTL</td><td><b class="yes">yes</b></td><td class="num">42 of 42 runs</td></tr>
+</table><p class="caveat">Efficiency-optimal: its least popular provider's expected window hit rate is 0.399, so the probability is at most 0.80. Cross-check for Fairness-TTL: 0.98 ± 0.01.</p></div>
+<h2>50 providers: same CoV, far fewer fair windows</h2>
+<div class="card wrap"><table>
+<tr><th></th><th class="num">20 providers</th><th class="num">50 providers</th></tr>
+<tr><td>least popular provider's requests per window</td><td class="num">139</td><td class="num">44</td></tr>
+<tr><td>Fairness-TTL: provider inequality (CoV)</td><td class="num">0.037</td><td class="num">0.037</td></tr>
+<tr><td>Fairness-TTL: most / least popular provider's hit rate</td><td class="num">0.70 / 0.61</td><td class="num">0.72 / 0.61</td></tr>
+<tr><td><b>Fairness-TTL: Pr[<i>fair window</i>]</b></td><td class="num good">0.98 ± 0.01</td><td class="num bad">0.42 ± 0.07</td></tr>
+<tr><td>LRU: Pr[<i>fair window</i>]</td><td class="num">0.00</td><td class="num">0.00</td></tr>
+</table><p class="caveat">Same controller and per-provider cache share; fixed popularity. Fairness-TTL 5 and 10 runs, LRU 20 and 5.</p></div>
+<figure><img src="img/Scale.png" alt="50 providers, long-run hit rate by provider: Fairness-TTL falls from 0.72 to 0.61; the best static split rises instead"><figcaption>Right: the chance a provider's hit rate in a 100 s window falls below 0.5 (for Fairness-TTL, computed from its long-run hit rates).</figcaption></figure>
+<h3>Why it fails at 50 providers</h3>
+<ol class="why50">
+<li><b>Fewer requests per provider.</b> The least popular provider sends only about 44 requests per window (139 at 20 providers), so its window hit rate swings more.</li>
+<li><b>The least popular providers get the lowest hit rate.</b> Fairness-TTL gives them about 0.61, close to the 0.5 bar, exactly where the swings are largest.</li>
+<li><b>Every provider must clear the bar at once.</b> With many such providers, the chance that none falls short drops to 0.42 ± 0.07.</li>
+</ol>
+<p><b>Best static split</b> (each provider permanently caches its <i>k<sub>i</sub></i> most popular objects, with the <i>k<sub>i</sub></i> chosen to maximise Pr[<i>fair window</i>]; less popular providers get more): Pr[<i>fair window</i>] = 0.93.</p>
+<p class="takeaway">Low provider inequality does not imply fair windows: as providers multiply, the less popular ones need more than an equal share.</p>
+
+<h2>20 providers when popularity reverses</h2>
+<figure><img src="img/Transient.png" alt="Mean of 20 runs per 100 s window: Fairness-TTL's hit rate dips from 0.666 to 0.623 when request rates reverse and recovers; its worst provider stays above 0.5; LRU's stays near 0.25"></figure>
+<p><b>Once:</b> the most popular provider becomes the least popular and vice versa.</p>
+<figure><img src="img/Flips.png" alt="Request rates flipping every 200 s and every 1,000 s: Fairness-TTL's worst provider stays above 0.5, LRU's near 0.25; Fairness-TTL's hit rate dips after each flip"></figure>
+<p><b>Back and forth:</b> with flips every 200 s or 1,000 s.</p>
+
+<h2>Caveats</h2>
+<ul class="caveat">
+<li>Our reconstruction, tuned at 20 providers and not re-tuned at 50; LRU and Fairness-optimal answers at 20 use a simpler model of the same cache.</li>
+<li>Equal and best-split values are exact for static allocations; 0.93 lies between 0.85 and 0.95, where the test could answer either way.</li>
+</ul>
+</main>
