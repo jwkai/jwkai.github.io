@@ -1,0 +1,127 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LTL primer</title>
+<style>
+/* "LTL primer" (built by scripts/ltl_page.py, which puts the back bar at the start of main; every img/<Class>.png is a
+   still from anim/scenes/ltl_primer_stills.py). A reference: the temporal operators, the logic and probability, and
+   the arithmetic in the queries and conditions of the case studies and experiments, then three queries set as in the
+   anatomy of a query. Same look as the "Does it scale?" page. The figures in a [data-fit] group share one scale (the
+   script at the end), so their text is one size. */
+:root{--fg:#0d2659;--text2:#3d4a66;--muted:#6b7480;--border:#dde0ea;--bg:#f5f6fa;--card:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--fg:#dfe5f3;--text2:#b7c0d4;--muted:#949db0;
+  --border:#2e3546;--bg:#12151d;color-scheme:dark}}
+:root[data-theme="dark"]{--fg:#dfe5f3;--text2:#b7c0d4;--muted:#949db0;--border:#2e3546;--bg:#12151d;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.45 -apple-system,"Helvetica Neue",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--fg)}
+main{max-width:1500px;margin:0 auto;padding:28px max(16px,env(safe-area-inset-right,0px)) 64px max(16px,env(safe-area-inset-left,0px))}
+.home{margin:0 0 14px;color:var(--muted);line-height:1.35;font-size:max(15px,min(20px,calc((min(1500px,100vw) - 40px) / 61)))}
+.home a{color:var(--fg);font-weight:600;text-decoration:none}.home a:hover{text-decoration:underline}.home b{color:var(--fg)}
+h1{font-size:34px;margin:6px 0 8px}
+.intro{color:var(--text2);margin:0 0 8px;max-width:62em;font-size:18px}
+h2.group{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:40px 0 14px;padding-top:14px;border-top:2px solid var(--border)}
+h3{font-size:22px;margin:0 0 4px}
+section{margin-top:26px}
+.ask{color:var(--text2);margin:0 0 10px;font-size:17px}
+/* math in the text: italic serif letters, bold operators */
+.m{font-family:"Times New Roman",Times,serif;font-style:italic;font-size:1.12em;white-space:nowrap}
+.m b{font-style:normal;font-family:inherit}
+.m .r{font-style:normal}
+.phat{position:relative;display:inline-block;font:italic 400 1em/1 "Times New Roman",Times,serif;padding:0 .04em}
+.phat::before{content:"\02C6";position:absolute;left:.2em;top:-.02em;font-style:normal}
+/* operator cards */
+.ops{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+figure{margin:0;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 18px 16px;display:flex;flex-direction:column;min-width:0}
+figure img{display:block;margin:auto;max-width:100%;height:auto}
+.op .name{font-size:19px;font-weight:700;margin:0 0 2px}
+.op .read{font-size:16px;margin:0 0 10px;color:#3d4a66}
+.op .used{font-size:14px;color:#6b7480;margin:10px 0 0}
+figcaption{color:#3d4a66;font-size:15px;margin-top:10px}
+.note{color:var(--text2);font-size:16px;margin:14px 0 0}
+/* tables */
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;color:#0d2659}
+th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--border);vertical-align:top;font-size:16px}
+th{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:#6b7480;font-weight:700;background:#fafbfd}
+tr:last-child td{border-bottom:0}
+td:first-child{white-space:nowrap;width:1%}
+td .m{font-size:1.18em}
+.ex{color:#3d4a66}
+.queries figure+figure{margin-top:14px}
+/* on dark pages the cards stay white, so the figures keep their colours; text inside them follows */
+figure{color:#0d2659}
+@media (max-width:900px){.ops{grid-template-columns:1fr}td:first-child{white-space:normal}}
+</style>
+<main>
+  <p class="home"><a href="../../">← Back</a> · <b>Extra</b> · The Case for Automated Probabilistic Reasoning for Network Performance Analysis (HotNets ’26)</p>
+
+  <h1>LTL primer</h1>
+  <p class="intro">A query asks how likely a performance property <span class="m">P</span> fails on the traces of a traffic condition <span class="m">C</span>. Both are formulas of bounded linear temporal logic (LTL), read one time step at a time over the model's variables. Here are the operators and the arithmetic they use, then three queries from the case studies.</p>
+
+  <h2 class="group">Temporal operators</h2>
+  <div class="ops" data-fit="22">
+    <figure class="op"><p class="name"><span class="m"><b>G</b><sub>≤T</sub> φ</span> &nbsp;always</p><p class="read"><span class="m">φ</span> holds at every step up to <span class="m">T</span>.</p><img src="img/Op_G.png" alt="A trace of 8 steps with phi holding at steps 1 to 5 and 7; a bracket marks steps 1 to 5, the window of G up to 5"><p class="used">Every property: incast, LLM batch scheduling, FQ-CoDel</p></figure>
+    <figure class="op"><p class="name"><span class="m"><b>F</b><sub>≤T</sub> φ</span> &nbsp;eventually</p><p class="read"><span class="m">φ</span> holds at some step up to <span class="m">T</span>.</p><img src="img/Op_F.png" alt="A trace of 8 steps with phi holding only at step 3, inside the window of steps 1 to 5"><p class="used">Learned conditions (FQ-CoDel, SP-PIFO)</p></figure>
+    <figure class="op"><p class="name"><span class="m"><b>X</b> φ</span> &nbsp;next</p><p class="read">There is a next step, and <span class="m">φ</span> holds at it.</p><img src="img/Op_X.png" alt="A trace of 8 steps with phi holding at step 2, the step after step 1"><p class="used">Learned conditions (FQ-CoDel, DRR, CoDel, shared buffer)</p></figure>
+    <figure class="op"><p class="name"><span class="m"><b>N</b> φ</span> &nbsp;weak next</p><p class="read">If there is a next step, <span class="m">φ</span> holds at it; at the last step it holds.</p><img src="img/Op_N.png" alt="A trace of 8 steps evaluated at step 8; step 9 does not exist, so weak next holds"><p class="used">Learned conditions (FQ-CoDel, CoDel, DRR)</p></figure>
+    <figure class="op"><p class="name"><span class="m">φ <b>U</b> ψ</span> &nbsp;until</p><p class="read"><span class="m">ψ</span> holds at some step, and <span class="m">φ</span> holds at every step before it.</p><img src="img/Op_U.png" alt="Two rows over 8 steps: phi holds at steps 1 to 3, psi at step 4"><p class="used">Learned conditions (FQ-CoDel, CoDel, DRR, shared buffer)</p></figure>
+    <figure class="op"><p class="name"><span class="m">φ <b>R</b> ψ</span> &nbsp;release</p><p class="read"><span class="m">ψ</span> holds up to and including the first step where <span class="m">φ</span> holds, or to the end of the trace.</p><img src="img/Op_R.png" alt="Two rows over 8 steps: psi holds at steps 1 to 4, phi at step 4"><p class="used">Learned conditions (DRR, shared buffer, SP-PIFO)</p></figure>
+  </div>
+  <p class="note">Every trace ends at the model's time horizon, so every operator is bounded; the subscript <span class="m"><span class="r">≤</span>T</span> names a bound inside it.</p>
+
+  <h2 class="group">Logic and probability</h2>
+  <table>
+    <tr><th>Operator</th><th>Meaning</th></tr>
+    <tr><td><span class="m"><span class="r">¬</span>φ</span></td><td>not <span class="m">φ</span></td></tr>
+    <tr><td><span class="m">φ <span class="r">∧</span> ψ</span></td><td><span class="m">φ</span> and <span class="m">ψ</span>: a condition joins its constraints with it</td></tr>
+    <tr><td><span class="m">φ <span class="r">∨</span> ψ</span></td><td><span class="m">φ</span> or <span class="m">ψ</span></td></tr>
+    <tr><td><span class="m"><span class="r">Pr[</span>φ <span class="r">|</span> C<span class="r">]</span></span></td><td>the probability that a trace satisfies <span class="m">φ</span>, among the traces that satisfy <span class="m">C</span></td></tr>
+    <tr><td><span class="m"><span class="r">Pr[¬</span>P <span class="r">|</span> C<span class="r">] ≥ 1 −</span> α</span></td><td>the query: a trace in <span class="m">C</span> fails <span class="m">P</span> with probability at least <span class="m"><span class="r">1 −</span> α</span>; <span class="m">α</span> is the share of <span class="m">C</span>'s traces that may not fail</td></tr>
+    <tr><td><span class="m"><span class="phat">p</span> <span class="r">±</span> δ</span></td><td>the checker's estimate of a probability from sampled traces, within the error threshold <span class="m">δ</span></td></tr>
+  </table>
+
+  <h2 class="group">Arithmetic in the atoms</h2>
+  <table>
+    <tr><th>Atom</th><th>Theory</th><th>Examples</th></tr>
+    <tr><td>a counter against a constant</td><td>linear integer arithmetic</td><td class="ex"><span class="m">odrops <span class="r">&lt; 8</span></span> (incast) · <span class="m">gap<span class="r">(</span>V<span class="r">) &lt; 3</span></span> (LLM batch scheduling) · <span class="m">tot_deqs<sub>bl</sub><span class="r">(</span>Q<sub>5</sub><span class="r">) &lt; 5</span></span> (FQ-CoDel)</td></tr>
+    <tr><td>a parameter in a range</td><td>intervals over integers and reals</td><td class="ex"><span class="m">N <span class="r">= 16 ∧ 184 ≤</span> W <span class="r">≤ 192</span></span> (incast) · <span class="m"><span class="r">0.28 ≤</span> p<sub>ol</sub> <span class="r">≤ 0.32</span></span> (LLM batch scheduling)</td></tr>
+    <tr><td>a count or average over a time window</td><td>linear arithmetic over integers and rationals, quantified over the window</td><td class="ex"><span class="m"><span class="r">∀</span>t <span class="r">∈ [1, 6]:</span> cenq<span class="r">(</span>Q<sub>5</sub>, t<span class="r">) ≤ 1</span></span> · <span class="m"><span class="r">∀</span>t <span class="r">∈ [7, 14]:</span> aipg<span class="r">(</span>Q<sub>5</sub>, t<span class="r">) ≥ 2</span></span> (FPerf's conditions, which the LLM explorer edits for FQ-CoDel)</td></tr>
+    <tr><td>an event at a step</td><td>propositions</td><td class="ex"><span class="m">a<sub>5</sub></span>: Q5 receives a packet · <span class="m">e<sub>5</sub></span>: Q5 is empty · <span class="m">bl</span>: Q1–Q4 are backlogged (learned conditions)</td></tr>
+  </table>
+
+  <h2 class="group">Three queries</h2>
+  <div class="queries" data-fit="30">
+    <section>
+      <h3>Incast</h3>
+      <p class="ask">Do the switch's buffers overflow when many senders answer at once?</p>
+      <figure><img src="img/Ex_Incast.png" alt="Pr of not G (odrops < 8) given N = 16 and 184 <= W <= 192 and 10 <= L <= 12, at least 1 - alpha; each part braced: not, always, packets dropped so far, fewer than 8, given, 16 senders, start window 184 to 192 slots, bursts of 10 to 12 packets, likelihood threshold"><figcaption>The condition is the box the LLM explorer settles on.</figcaption></figure>
+    </section>
+    <section>
+      <h3>LLM batch scheduling</h3>
+      <p class="ask">Does an interactive request miss its time-between-tokens SLO?</p>
+      <figure><img src="img/Ex_LLM.png" alt="Pr of not G up to 400 (gap(V) < 3) given 20 <= S <= 24 and 0.28 <= p_ol <= 0.32, at least 1 - alpha; each part braced: not, always up to iteration 400, iterations since V's last token, fewer than 3, given, 20 to 24 batch slots, 28% to 32% long outputs, likelihood threshold"><figcaption>The condition is the box the explorer finds: few batch slots and many long outputs.</figcaption></figure>
+    </section>
+    <section>
+      <h3>FQ-CoDel</h3>
+      <p class="ask">Can Q5 cut ahead of four backlogged queues?</p>
+      <figure><img src="img/Ex_FQ.png" alt="Pr of not G up to 14 (tot_deqs_bl(Q5) < 5) given C, at least 1 - alpha; each part braced: not, always up to step 14, Q5 served while Q1-Q4 backlogged, fewer than 5 times, given, traffic condition, likelihood threshold"></figure>
+      <figure><img src="img/Ex_FQC.png" alt="C* = F (a5 and X e5); each part braced: eventually, Q5 receives a packet, and, next, Q5 is empty"><figcaption>The condition the RL explorer finds, explained by the LTL learner: eventually Q5 receives a packet that is gone by the next step.</figcaption></figure>
+    </section>
+  </div>
+</main>
+<script>
+/* every figure in a [data-fit] group at one scale: the largest that fits each image's card width and data-fit% of
+   the window height (the stills share a pixel density, so equal scale means equal text and line sizes) */
+function fit(){
+  document.querySelectorAll('[data-fit]').forEach(g=>{
+    const imgs=[...g.querySelectorAll('img')];
+    if(imgs.some(i=>!i.naturalWidth))return;
+    imgs.forEach(i=>{i.style.width='';i.style.height=''});
+    const H=innerHeight*(+g.dataset.fit)/100;
+    const s=Math.min(...imgs.map(i=>{const f=i.closest('figure'),cs=getComputedStyle(f);
+      const w=f.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+      return Math.min(w/i.naturalWidth,H/i.naturalHeight)}));
+    imgs.forEach(i=>{i.style.width=Math.floor(i.naturalWidth*s)+'px';i.style.height=Math.floor(i.naturalHeight*s)+'px'});
+  });
+}
+addEventListener('load',fit);addEventListener('resize',fit);
+</script>
